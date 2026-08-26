@@ -4,7 +4,7 @@ recognize any authors or titles, what if you could quickly find out who they are
 Book Scanner helps you find out what book you should pick by using AI to help you discover
 what you'll enjoy.
 
-shelfscanner.vercel.app
+[shelfscanner.vercel.app]([url](https://schelfscanner.vercel.app/))
 
 ## What it does
 Photograph a bookshelf, set your reading preferences, and get an AI-picked
