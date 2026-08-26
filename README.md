@@ -1,4 +1,4 @@
-# schelfscanner 📚
+# shelfscanner 📚
 
 Photograph a bookshelf, set your reading preferences, and get an AI-picked
 recommendation from the books actually on that shelf.
