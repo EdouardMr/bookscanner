@@ -1,5 +1,12 @@
-# shelfscanner 📚
+# Book Scanner 📚
+Imagine you are facing a book shelf, either at a book store or at a friend's, and you don't 
+recognize any authors or titles, what if you could quickly find out who they are?
+Book Scanner helps you find out what book you should pick by using AI to help you discover
+what you'll enjoy.
 
+shelfscanner.vercel.app
+
+## What it does
 Photograph a bookshelf, set your reading preferences, and get an AI-picked
 recommendation from the books actually on that shelf.
 
@@ -17,15 +24,15 @@ login). See [`.claude/plans/`](../../.claude/plans) in this repo's history
 for the full design rationale if you have it, or the code comments in
 `lib/`.
 
-## Stack
+## Tech Stack
 
 - Next.js (App Router) + TypeScript + Tailwind CSS
-- Claude (`@anthropic-ai/sdk`) for vision extraction and recommendations,
+- AI services: Claude (`@anthropic-ai/sdk`) for vision extraction and recommendations,
   with structured (zod-validated) output via `messages.parse`
 - Open Library (no key needed) + Google Books (optional key) for book
   metadata/covers/ratings
 - Postgres (Neon) + Drizzle ORM for preferences and reading history
-- Deployed on Vercel
+- Deployment: Vercel (Frontend & API)
 
 ## Setup
 
