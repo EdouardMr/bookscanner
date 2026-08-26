@@ -92,6 +92,18 @@ npm run dev
 - `app/api/scan` calls `lib/anthropic/extractBooks.ts` (vision) then
   `lib/books/enrich.ts` (Open Library → Google Books → unmatched, run in
   parallel per book).
+- `extractBooks.ts` enforces a hard app-level cap of one Claude API call
+  per minute (`lib/anthropic/rateLimit.ts`) and caches results by image
+  hash for 10 minutes (`lib/anthropic/cache.ts`) so retries/double-submits
+  are free. `recommend.ts` shares the same rate limit and caches by
+  (shelf, preferences) for an hour. When Claude can't be used for any
+  reason — our own rate limit, an Anthropic outage, a bad key — scanning
+  falls back to Google Cloud Vision OCR (`lib/google/visionFallback.ts`,
+  reusing `GOOGLE_BOOKS_API_KEY`), which is much lower quality (no
+  title/author split, no real confidence) but keeps the app usable; the
+  response's `warnings` flags this to the client. A bad photo
+  (`BadRequestError`) skips the fallback entirely since a different OCR
+  engine won't fix a bad input.
 - `app/api/recommend` calls `lib/anthropic/recommend.ts`, which restricts
   the model's possible `bookId` outputs to a literal enum of the actual
   shelf's ids (see `lib/anthropic/prompts.ts`) — it's structurally

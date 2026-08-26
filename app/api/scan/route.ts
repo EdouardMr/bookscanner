@@ -24,12 +24,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const detected = await extractBooks(parsed.data);
+    const { books: detected, source } = await extractBooks(parsed.data);
+    const warnings: string[] = [];
+    if (source === "google-vision") {
+      warnings.push(
+        "The AI reader was unavailable, so we fell back to basic text recognition — results may be less accurate than usual."
+      );
+    }
 
     if (detected.length === 0) {
       const response: ScanResponse = {
         books: [],
         warnings: [
+          ...warnings,
           "Couldn't make out any book titles in that photo — try a closer, well-lit shot straight-on to the spines.",
         ],
       };
@@ -37,7 +44,10 @@ export async function POST(request: Request) {
     }
 
     const books = await enrichBooks(detected);
-    const response: ScanResponse = { books };
+    const response: ScanResponse = {
+      books,
+      ...(warnings.length > 0 && { warnings }),
+    };
     return NextResponse.json(response);
   } catch (error) {
     const { status, body } = toHttpError(error);
