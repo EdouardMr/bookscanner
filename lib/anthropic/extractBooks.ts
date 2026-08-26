@@ -1,6 +1,7 @@
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { anthropic, ANTHROPIC_MODEL } from "./client";
 import { EXTRACT_SYSTEM_PROMPT } from "./prompts";
+import { enforceRateLimit } from "./rateLimit";
 import { DetectedBookListSchema, type DetectedBook } from "@/lib/validation/schemas";
 
 export interface ExtractBooksInput {
@@ -12,6 +13,8 @@ export async function extractBooks({
   imageBase64,
   mediaType,
 }: ExtractBooksInput): Promise<DetectedBook[]> {
+  enforceRateLimit();
+
   const message = await anthropic.messages.parse({
     model: ANTHROPIC_MODEL,
     max_tokens: 4096,

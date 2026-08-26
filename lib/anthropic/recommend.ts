@@ -5,6 +5,7 @@ import {
   buildRecommendUserContent,
   buildRecommendResponseSchema,
 } from "./prompts";
+import { enforceRateLimit } from "./rateLimit";
 import type { EnrichedBook, Preferences, RecommendResponse } from "@/lib/validation/schemas";
 
 export async function recommend(
@@ -14,6 +15,8 @@ export async function recommend(
   if (books.length === 0) {
     throw new Error("recommend() requires at least one candidate book");
   }
+
+  enforceRateLimit();
 
   const responseSchema = buildRecommendResponseSchema(books);
 
