@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "shelfscanner",
+  title: "bookscanner",
   description:
     "Scan a bookshelf photo and get an AI-powered book recommendation matched to your taste.",
 };

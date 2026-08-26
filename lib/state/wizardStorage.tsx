@@ -10,7 +10,7 @@ import {
 import { EMPTY_PREFERENCES } from "@/lib/validation/schemas";
 import type { EnrichedBook, Preferences, RecommendResponse } from "@/types";
 
-const STORAGE_KEY = "shelfscanner:wizard";
+const STORAGE_KEY = "bookscanner:wizard";
 
 interface WizardState {
   books: EnrichedBook[];
