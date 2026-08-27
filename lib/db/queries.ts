@@ -1,8 +1,8 @@
 import "server-only";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { db } from "./client";
-import { devices, preferences, scans } from "./schema";
+import { devices, preferences, scans, rateLimits } from "./schema";
 import {
   EMPTY_PREFERENCES,
   type EnrichedBook,
@@ -91,4 +91,48 @@ export async function listScans(deviceId: string): Promise<ScanHistoryEntry[]> {
     detectedBooks: row.detectedBooks,
     recommendation: row.recommendation,
   }));
+}
+
+/**
+ * Atomically checks and records a rate-limited call for (deviceId, scope):
+ * inserts a fresh row if none exists (first call, always allowed), or bumps
+ * last_call_at only if the existing value is older than windowMs — a single
+ * INSERT ... ON CONFLICT DO UPDATE ... WHERE, which Postgres guarantees is
+ * atomic on its own without needing an interactive transaction (the
+ * neon-http driver used here doesn't support those). Returns the row if the
+ * call was allowed (and recorded), or undefined if denied (still within the
+ * window).
+ */
+export async function tryRecordRateLimitedCall(
+  deviceId: string,
+  scope: string,
+  windowMs: number
+): Promise<{ lastCallAt: Date } | undefined> {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - windowMs);
+
+  const [row] = await db
+    .insert(rateLimits)
+    .values({ deviceId, scope, lastCallAt: now })
+    .onConflictDoUpdate({
+      target: [rateLimits.deviceId, rateLimits.scope],
+      set: { lastCallAt: now },
+      where: sql`${rateLimits.lastCallAt} < ${cutoff}`,
+    })
+    .returning({ lastCallAt: rateLimits.lastCallAt });
+
+  return row;
+}
+
+/** Only called on the (rare) denied path, to compute retryAfterSeconds. */
+export async function getRateLimitLastCallAt(
+  deviceId: string,
+  scope: string
+): Promise<Date | undefined> {
+  const [row] = await db
+    .select({ lastCallAt: rateLimits.lastCallAt })
+    .from(rateLimits)
+    .where(and(eq(rateLimits.deviceId, deviceId), eq(rateLimits.scope, scope)))
+    .limit(1);
+  return row?.lastCallAt;
 }

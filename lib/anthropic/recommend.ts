@@ -35,7 +35,8 @@ function buildCacheKey(books: EnrichedBook[], preferences: Preferences): string 
 
 export async function recommend(
   books: EnrichedBook[],
-  preferences: Preferences
+  preferences: Preferences,
+  deviceId: string
 ): Promise<RecommendResponse> {
   if (books.length === 0) {
     throw new Error("recommend() requires at least one candidate book");
@@ -45,7 +46,7 @@ export async function recommend(
   const cached = recommendCache.get(cacheKey);
   if (cached) return cached;
 
-  enforceRateLimit();
+  await enforceRateLimit(deviceId, "recommend");
 
   const responseSchema = buildRecommendResponseSchema(books);
 
