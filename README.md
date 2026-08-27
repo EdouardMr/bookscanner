@@ -1,5 +1,12 @@
-# bookscanner 📚
+# Book Scanner 📚
+Imagine you are facing a book shelf, either at a book store or at a friend's, and you don't 
+recognize any authors or titles, what if you could quickly find out who they are?
+Book Scanner helps you find out what book you should pick by using AI to help you discover
+what you'll enjoy.
 
+[shelfscanner.vercel.app]([url](https://schelfscanner.vercel.app/))
+
+## What it does
 Photograph a bookshelf, set your reading preferences, and get an AI-picked
 recommendation from the books actually on that shelf.
 
@@ -17,15 +24,15 @@ login). See [`.claude/plans/`](../../.claude/plans) in this repo's history
 for the full design rationale if you have it, or the code comments in
 `lib/`.
 
-## Stack
+## Tech Stack
 
 - Next.js (App Router) + TypeScript + Tailwind CSS
-- Claude (`@anthropic-ai/sdk`) for vision extraction and recommendations,
+- AI services: Claude (`@anthropic-ai/sdk`) for vision extraction and recommendations,
   with structured (zod-validated) output via `messages.parse`
 - Open Library (no key needed) + Google Books (optional key) for book
   metadata/covers/ratings
 - Postgres (Neon) + Drizzle ORM for preferences and reading history
-- Deployed on Vercel
+- Deployment: Vercel (Frontend & API)
 
 ## Setup
 
@@ -92,6 +99,18 @@ npm run dev
 - `app/api/scan` calls `lib/anthropic/extractBooks.ts` (vision) then
   `lib/books/enrich.ts` (Open Library → Google Books → unmatched, run in
   parallel per book).
+- `extractBooks.ts` enforces a hard app-level cap of one Claude API call
+  per minute (`lib/anthropic/rateLimit.ts`) and caches results by image
+  hash for 10 minutes (`lib/anthropic/cache.ts`) so retries/double-submits
+  are free. `recommend.ts` shares the same rate limit and caches by
+  (shelf, preferences) for an hour. When Claude can't be used for any
+  reason — our own rate limit, an Anthropic outage, a bad key — scanning
+  falls back to Google Cloud Vision OCR (`lib/google/visionFallback.ts`,
+  reusing `GOOGLE_BOOKS_API_KEY`), which is much lower quality (no
+  title/author split, no real confidence) but keeps the app usable; the
+  response's `warnings` flags this to the client. A bad photo
+  (`BadRequestError`) skips the fallback entirely since a different OCR
+  engine won't fix a bad input.
 - `app/api/recommend` calls `lib/anthropic/recommend.ts`, which restricts
   the model's possible `bookId` outputs to a literal enum of the actual
   shelf's ids (see `lib/anthropic/prompts.ts`) — it's structurally

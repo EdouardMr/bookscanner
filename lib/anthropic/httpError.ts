@@ -4,6 +4,7 @@ import {
   RateLimitError,
   APIConnectionError,
 } from "@anthropic-ai/sdk";
+import { RateLimitExceededError } from "./rateLimit";
 
 /**
  * Maps an error thrown from an Anthropic API call to an HTTP status + safe
@@ -14,6 +15,12 @@ export function toHttpError(error: unknown): {
   status: number;
   body: { error: string };
 } {
+  if (error instanceof RateLimitExceededError) {
+    return {
+      status: 429,
+      body: { error: error.message },
+    };
+  }
   if (error instanceof BadRequestError) {
     return {
       status: 400,
