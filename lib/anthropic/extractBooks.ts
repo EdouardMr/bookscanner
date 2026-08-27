@@ -11,6 +11,7 @@ import { DetectedBookListSchema, type DetectedBook } from "@/lib/validation/sche
 export interface ExtractBooksInput {
   imageBase64: string;
   mediaType: "image/jpeg" | "image/png" | "image/webp";
+  deviceId: string;
 }
 
 export interface ExtractBooksResult {
@@ -29,6 +30,7 @@ const extractCache = new TtlCache<ExtractBooksResult>(EXTRACT_CACHE_TTL_MS);
 export async function extractBooks({
   imageBase64,
   mediaType,
+  deviceId,
 }: ExtractBooksInput): Promise<ExtractBooksResult> {
   const cacheKey = createHash("sha256")
     .update(mediaType)
@@ -40,7 +42,7 @@ export async function extractBooks({
 
   let result: ExtractBooksResult;
   try {
-    enforceRateLimit();
+    await enforceRateLimit(deviceId, "extract");
 
     const message = await anthropic.messages.parse({
       model: ANTHROPIC_MODEL,

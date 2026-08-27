@@ -25,13 +25,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await recommend(parsed.data.books, parsed.data.preferences);
+    const deviceId = await getDeviceId();
+    const result = await recommend(parsed.data.books, parsed.data.preferences, deviceId);
 
     // Persist to this device's reading history. A failure here shouldn't
     // hide a perfectly good recommendation from the user, so log and
     // continue rather than 500ing the whole request.
     try {
-      const deviceId = await getDeviceId();
       await saveScan(deviceId, parsed.data.books, result);
     } catch (persistError) {
       console.error("Failed to save scan to history:", persistError);

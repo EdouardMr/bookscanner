@@ -1,9 +1,15 @@
 import "server-only";
+import {
+  tryRecordRateLimitedCall,
+  getRateLimitLastCallAt,
+} from "@/lib/db/queries";
+import { computeRetryAfterSeconds } from "./retryAfter";
+
+export { computeRetryAfterSeconds } from "./retryAfter";
 
 const WINDOW_MS = 60_000;
 
-/** Timestamp (ms) of the last permitted Claude API call, process-wide. */
-let lastCallAt = 0;
+export type RateLimitScope = "extract" | "recommend";
 
 export class RateLimitExceededError extends Error {
   constructor(public readonly retryAfterSeconds: number) {
@@ -15,23 +21,39 @@ export class RateLimitExceededError extends Error {
 }
 
 /**
- * Hard app-level cap of one Claude API call per minute, shared across every
- * caller (scan and recommend alike) in this process. Call this immediately
- * before each `anthropic.messages.parse`/`create` call; it throws
- * `RateLimitExceededError` — mapped to an HTTP 429 in `httpError.ts` — if a
- * call lands before the previous one's window has elapsed, and otherwise
- * records this call as the new window start.
+ * Hard app-level cap of one Claude API call per minute per (device,
+ * scope), backed by Postgres so it's enforced correctly across every
+ * Vercel instance/region — not just within one warm lambda, unlike a
+ * naive in-memory counter would be. `scope` separates the extract (scan)
+ * and recommend budgets so a normal scan-then-recommend flow doesn't
+ * self-trigger the limit on its second call.
  *
- * In-memory only: this limits calls within a single server process. On
- * Vercel that means per warm lambda instance, not globally across every
- * instance/region — for a hard cross-instance limit this would need a
- * shared store (e.g. Postgres or Redis) instead.
+ * Fails open (logs and allows the call through) if the DB check itself
+ * errors, rather than turning a transient Neon issue into an outage of
+ * scanning/recommending — a real "over limit" is signaled by
+ * tryRecordRateLimitedCall's return value, not an exception, so this
+ * can't mask a genuine denial.
  */
-export function enforceRateLimit(): void {
-  const now = Date.now();
-  const elapsed = now - lastCallAt;
-  if (elapsed < WINDOW_MS) {
-    throw new RateLimitExceededError(Math.ceil((WINDOW_MS - elapsed) / 1000));
+export async function enforceRateLimit(
+  deviceId: string,
+  scope: RateLimitScope
+): Promise<void> {
+  let allowed: { lastCallAt: Date } | undefined;
+  try {
+    allowed = await tryRecordRateLimitedCall(deviceId, scope, WINDOW_MS);
+  } catch (dbError) {
+    console.error(
+      `Rate limit check failed (DB error), failing open for scope "${scope}":`,
+      dbError
+    );
+    return;
   }
-  lastCallAt = now;
+
+  if (allowed) return;
+
+  const lastCallAt = await getRateLimitLastCallAt(deviceId, scope);
+  const retryAfterSeconds = lastCallAt
+    ? computeRetryAfterSeconds(lastCallAt, WINDOW_MS)
+    : Math.ceil(WINDOW_MS / 1000);
+  throw new RateLimitExceededError(retryAfterSeconds);
 }

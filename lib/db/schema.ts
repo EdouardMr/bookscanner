@@ -4,6 +4,7 @@ import {
   timestamp,
   text,
   jsonb,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import type { EnrichedBook, RecommendResponse } from "@/lib/validation/schemas";
 
@@ -55,3 +56,22 @@ export const scans = pgTable("scans", {
   detectedBooks: jsonb("detected_books").$type<EnrichedBook[]>().notNull(),
   recommendation: jsonb("recommendation").$type<RecommendResponse>().notNull(),
 });
+
+/**
+ * Tracks the last permitted Claude API call per (device, scope), where
+ * scope is "extract" | "recommend" — see lib/anthropic/rateLimit.ts. Each
+ * pairing is independently capped to one call per window, so a normal
+ * scan-then-recommend flow doesn't self-trigger the limit on its second
+ * call.
+ */
+export const rateLimits = pgTable(
+  "rate_limits",
+  {
+    deviceId: uuid("device_id")
+      .notNull()
+      .references(() => devices.id, { onDelete: "cascade" }),
+    scope: text("scope").notNull(),
+    lastCallAt: timestamp("last_call_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.deviceId, table.scope] })]
+);

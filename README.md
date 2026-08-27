@@ -30,7 +30,7 @@ what you'll enjoy.
 - **No Login**: identity is a single anonymous httpOnly device-id cookie — clearing cookies just starts fresh
 
 ### Performance & Reliability
-- **Rate Limiting**: a hard app-level cap of one Claude API call per minute protects against runaway cost
+- **Rate Limiting**: a hard cap of one Claude API call per minute per (device, call type), backed by Postgres so it holds across every serverless instance, not just in-process
 - **Intelligent Caching**: scan results are cached by image hash (10 min) and recommendations by shelf + preferences (1 hour), so retries and double-submits never burn the rate-limit budget
 - **Graceful Fallback**: when Claude can't be used for any reason — the rate limit, an Anthropic outage, a bad key — scanning falls back to Google Cloud Vision OCR instead of failing outright, with a `warnings` flag telling the client the result may be less accurate
 - **Specific Error Handling**: Anthropic API failures are mapped to safe, specific HTTP responses — bad request → auth → rate limit → connection → unknown — rather than one generic 500
@@ -211,8 +211,14 @@ bookscanner/
   to an anonymous per-browser device id — browsable later at `/history`
 
 ### 5. Rate Limiting & Caching
-- `lib/anthropic/rateLimit.ts` enforces one Claude call per minute across
-  both the scan and recommend endpoints, process-wide
+- `lib/anthropic/rateLimit.ts` enforces one Claude call per minute per
+  (anonymous device, call type) — scan and recommend have independent
+  budgets, so a normal scan-then-recommend flow doesn't self-trigger the
+  limit on its second call. State lives in Postgres (a `rate_limits`
+  table), not in memory, so it holds correctly across every Vercel
+  instance/region; the check fails open (logs and lets the call through)
+  if the DB itself errors, so a transient Neon issue degrades to "briefly
+  unlimited," not "the app stops working"
 - `lib/anthropic/cache.ts` short-circuits that limit for repeat requests:
   identical (image) or (shelf + preferences) inputs are served from an
   in-memory TTL cache instead of hitting Claude again

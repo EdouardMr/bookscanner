@@ -3,6 +3,7 @@ import { ScanRequestSchema, type ScanResponse } from "@/lib/validation/schemas";
 import { extractBooks } from "@/lib/anthropic/extractBooks";
 import { enrichBooks } from "@/lib/books/enrich";
 import { toHttpError } from "@/lib/anthropic/httpError";
+import { getDeviceId } from "@/lib/device/deviceId";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -24,7 +25,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { books: detected, source } = await extractBooks(parsed.data);
+    const deviceId = await getDeviceId();
+    const { books: detected, source } = await extractBooks({ ...parsed.data, deviceId });
     const warnings: string[] = [];
     if (source === "google-vision") {
       warnings.push(
