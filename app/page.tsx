@@ -8,7 +8,7 @@ export default function LandingPage() {
         📚
       </span>
       <div className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-stone-900">shelfscanner</h1>
+        <h1 className="text-3xl font-semibold text-stone-900">bookscanner</h1>
         <p className="text-stone-600">
           Photograph a bookshelf, tell us what you like, and we&apos;ll tell you
           which book on it to read next.

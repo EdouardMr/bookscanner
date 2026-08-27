@@ -30,7 +30,7 @@ export default function HistoryPage() {
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-4 py-8 sm:py-12">
       <header className="flex items-center justify-between">
         <Link href="/" className="text-lg font-semibold text-stone-900">
-          📚 shelfscanner
+          📚 bookscanner
         </Link>
         <Link href="/scan" className="text-sm font-medium text-amber-700 underline underline-offset-2">
           New scan

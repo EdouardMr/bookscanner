@@ -9,7 +9,7 @@ export default function WizardLayout({ children }: { children: ReactNode }) {
       <div className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-4 py-8 sm:py-12">
         <header className="flex flex-col gap-5">
           <Link href="/" className="text-lg font-semibold text-stone-900">
-            📚 shelfscanner
+            📚 bookscanner
           </Link>
           <StepProgress />
         </header>
