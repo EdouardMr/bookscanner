@@ -9,16 +9,16 @@ what you'll enjoy.
 
 ## What It Does
 
-📸 **Scan a Shelf** → Photograph a bookshelf; Claude vision reads the spines and identifies titles/authors  
-🎯 **Set Preferences** → Genres, favorite authors/books, mood, and length — saved to your browser so you don't redo it  
-🤖 **Get a Recommendation** → A second Claude call ranks the shelf against your taste and explains why  
-📖 **Rich Details** → Real ratings, covers, and descriptions from Open Library, with Google Books as a fallback  
-🔒 **No Account Needed** → Anonymous per-browser device id; the photo itself is never stored
+📸 **Scan a Shelf** → Photograph a bookshelf  
+🎯 **Set Preferences** → Genres, favorite authors/books, mood, and length. It's saved to your browser so you don't redo it  
+🤖 **Get a Recommendation** → A recommendation is made against your taste with an explanation
+📖 **Rich Details** → Real ratings, covers, and descriptions from Open Library  
+🔒 **No Account Needed** → Anonymous per-browser device id. The photo itself is never stored
 
 ## Key Features
 
 ### Smart Book Discovery
-- **Shelf Scanning**: photograph a whole shelf at once — Claude vision plus zod-validated structured output extracts every title/author it can read
+- **Shelf Scanning**: photograph a whole shelf at once. Claude vision plus zod-validated structured output extracts every title/author it can read
 - **Grounded Recommendations**: the response schema restricts the model's `bookId` output to a literal enum of the shelf's actual detected ids, so it's structurally impossible to recommend a book that isn't there
 - **Match Reasoning**: each pick's rationale must reference your specific stated preferences by name, not just a generic blurb
 - **Enriched Metadata**: canonical title/author, cover, description, and rating resolved via Open Library, falling back to Google Books, with an `unmatched` state rather than dropping a book with no match
