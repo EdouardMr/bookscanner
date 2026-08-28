@@ -23,10 +23,11 @@ what you'll enjoy.
 - **Enriched Metadata**: canonical title/author, cover, description, and rating resolved via Open Library, falling back to Google Books, with an `unmatched` state rather than dropping a book with no match
 
 ### User Experience
-- **Three-Step Wizard**: Scan → Preferences → Discover, behind a shared layout with a progress indicator
+- **Mobile-First Design**: Optimized for smartphones and tables
 - **Refresh-Safe**: in-progress scan state lives in `sessionStorage`, so a reload mid-flow doesn't lose it
 - **Reading History**: past scans and recommendations are saved per device and browsable at `/history`
-- **No Login**: identity is a single anonymous httpOnly device-id cookie — clearing cookies just starts fresh
+- **No Login**: No account required. Preferences stored per device. Identity is a single anonymous httpOnly device-id cookie
+- **Responsive Design**: Works well on all screen sizes
 
 ### Performance & Reliability
 - **Rate Limiting**: a hard cap of one Claude API call per minute per (device, call type), backed by Postgres so it holds across every serverless instance, not just in-process
