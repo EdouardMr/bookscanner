@@ -4,6 +4,7 @@ import {
   getRateLimitLastCallAt,
 } from "@/lib/db/queries";
 import { computeRetryAfterSeconds } from "./retryAfter";
+import { captureError } from "@/lib/observability/captureError";
 
 export { computeRetryAfterSeconds } from "./retryAfter";
 
@@ -46,6 +47,7 @@ export async function enforceRateLimit(
       `Rate limit check failed (DB error), failing open for scope "${scope}":`,
       dbError
     );
+    captureError(dbError, { scope: "rate-limit", deviceId, extra: { rateLimitScope: scope } });
     return;
   }
 

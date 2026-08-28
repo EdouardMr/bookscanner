@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PreferencesSchema } from "@/lib/validation/schemas";
 import { getDeviceId } from "@/lib/device/deviceId";
 import { getPreferences, upsertPreferences } from "@/lib/db/queries";
+import { captureError } from "@/lib/observability/captureError";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,7 @@ export async function GET() {
     return NextResponse.json(prefs);
   } catch (error) {
     console.error("Failed to load preferences:", error);
+    captureError(error, { scope: "preferences", extra: { method: "GET" } });
     return NextResponse.json(
       { error: "Couldn't load saved preferences." },
       { status: 500 }
@@ -41,6 +43,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(parsed.data);
   } catch (error) {
     console.error("Failed to save preferences:", error);
+    captureError(error, { scope: "preferences", extra: { method: "PUT" } });
     return NextResponse.json(
       { error: "Couldn't save preferences." },
       { status: 500 }

@@ -5,13 +5,22 @@ import {
   APIConnectionError,
 } from "@anthropic-ai/sdk";
 import { RateLimitExceededError } from "./rateLimit";
+import { captureError, type ObservabilityScope } from "@/lib/observability/captureError";
 
 /**
  * Maps an error thrown from an Anthropic API call to an HTTP status + safe
  * client-facing message, checked most-specific-first. Anything not one of
  * these known types is treated as an unexpected 500.
+ *
+ * `scope` identifies which caller this came from — this function is shared
+ * by both the scan (extract) and recommend routes, so it can't hardcode a
+ * single scope for its own captureError() calls without mistagging one of
+ * them.
  */
-export function toHttpError(error: unknown): {
+export function toHttpError(
+  error: unknown,
+  scope: Extract<ObservabilityScope, "extract" | "recommend">
+): {
   status: number;
   body: { error: string };
 } {
@@ -30,6 +39,7 @@ export function toHttpError(error: unknown): {
   if (error instanceof AuthenticationError) {
     // Never leak key/config details to the client.
     console.error("Anthropic authentication error:", error);
+    captureError(error, { scope });
     return {
       status: 500,
       body: { error: "Server misconfiguration. Please try again later." },
@@ -51,6 +61,7 @@ export function toHttpError(error: unknown): {
   }
 
   console.error("Unexpected error calling Anthropic:", error);
+  captureError(error, { scope });
   return {
     status: 500,
     body: { error: "Something went wrong. Please try again." },
