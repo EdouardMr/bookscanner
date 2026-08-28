@@ -35,6 +35,7 @@ what you'll enjoy.
 - **Graceful Fallback**: when Claude can't be used for any reason — the rate limit, an Anthropic outage, a bad key — scanning falls back to Google Cloud Vision OCR instead of failing outright, with a `warnings` flag telling the client the result may be less accurate
 - **Specific Error Handling**: Anthropic API failures are mapped to safe, specific HTTP responses — bad request → auth → rate limit → connection → unknown — rather than one generic 500
 - **Parallel Enrichment**: each detected book's Open Library/Google Books lookups run concurrently, not one at a time
+- **Error Monitoring**: server and client errors are reported to Sentry, tagged by scope and error type — so a genuine outage (an Anthropic auth failure, both vision providers failing at once, a silent history-save failure) can be alerted on separately from expected conditions like a user simply hitting the rate limit
 
 ## 🛠 Technology Stack
 
@@ -120,6 +121,14 @@ GOOGLE_BOOKS_API_KEY=
 
 # Override the Claude model used for vision extraction + recommendations.
 ANTHROPIC_MODEL=claude-sonnet-5
+
+# Error monitoring (Sentry) — see the Error Monitoring setup note below.
+# The app runs fine without these; Sentry simply won't receive events.
+SENTRY_DSN=
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_ORG=
+SENTRY_PROJECT=
+SENTRY_AUTH_TOKEN=
 ```
 
 ### API Key Setup
@@ -142,6 +151,17 @@ ANTHROPIC_MODEL=claude-sonnet-5
    tier, so without this the OCR fallback just errors instead of
    kicking in when Claude is unavailable
 3. Create an API key and set `GOOGLE_BOOKS_API_KEY`
+
+**Error Monitoring** (Optional):
+1. Run `vercel integration add sentry` (requires accepting Sentry's terms
+   in a browser the first time), then `vercel env pull` to pull the
+   provisioned `SENTRY_DSN`/`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN`
+   into `.env.local`
+2. Also set `NEXT_PUBLIC_SENTRY_DSN` to the same value as `SENTRY_DSN` —
+   it's the one exposed to the browser bundle for client-side capture
+3. Configure alert rules in the Sentry dashboard — see suggested tiers in
+   [Error Monitoring](#6-error-monitoring) below; nothing here is defined
+   as code
 
 ## 📁 Project Architecture
 
@@ -222,6 +242,32 @@ bookscanner/
 - `lib/anthropic/cache.ts` short-circuits that limit for repeat requests:
   identical (image) or (shelf + preferences) inputs are served from an
   in-memory TTL cache instead of hitting Claude again
+
+### 6. Error Monitoring
+- Errors from Claude/Anthropic calls, the Google Vision fallback, Postgres
+  queries, and history persistence are reported to Sentry via a shared
+  `captureError()` helper (`lib/observability/captureError.ts`), tagged with
+  `scope` (which subsystem) and `errorType` (the error's constructor name)
+- That tagging is what lets a Sentry alert rule distinguish, e.g., a genuine
+  Anthropic outage from a user simply hitting the one-call-per-minute rate
+  limit — both can reach the same fallback path, but only one is worth
+  paging on
+- Uncaught client-side render errors are caught separately by
+  `app/global-error.tsx`, the root error boundary
+- Provisioned via the Vercel Sentry Marketplace integration
+  (`vercel integration add sentry`) — see
+  [Environment Configuration](#-environment-configuration); the app runs
+  fine without it configured, Sentry just won't receive events
+- Suggested Sentry alert rule tiers (configured in the dashboard, not code):
+  - **Critical** (notify immediately): `errorType:AuthenticationError`;
+    `scope:vision-fallback` (both Claude and the Google Vision fallback
+    down at once); `scope:save-scan` (a recommendation succeeded but
+    saving it to history silently failed)
+  - **Warning** (aggregate over a window): `scope:extract` excluding
+    `errorType:RateLimitExceededError` (real Claude issues, not a user's
+    own rate-limit hit); `scope:rate-limit` (repeated Postgres failures
+    while checking the limit — a single one is expected-rare); `scope:history`
+    / `scope:preferences` error rate
 
 ## 🛡 Security & Privacy
 

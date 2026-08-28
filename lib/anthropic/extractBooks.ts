@@ -5,6 +5,7 @@ import { anthropic, ANTHROPIC_MODEL } from "./client";
 import { EXTRACT_SYSTEM_PROMPT } from "./prompts";
 import { enforceRateLimit } from "./rateLimit";
 import { TtlCache } from "./cache";
+import { captureError } from "@/lib/observability/captureError";
 import { extractBooksWithGoogleVision } from "@/lib/google/visionFallback";
 import { DetectedBookListSchema, type DetectedBook } from "@/lib/validation/schemas";
 
@@ -85,11 +86,20 @@ export async function extractBooks({
       "Claude vision extraction unavailable, falling back to Google Vision:",
       error
     );
+    captureError(error, { scope: "extract", deviceId, extra: { fallback: "google-vision" } });
     try {
       const books = await extractBooksWithGoogleVision(imageBase64);
       result = { books, source: "google-vision" };
     } catch (fallbackError) {
       console.error("Google Vision fallback also failed:", fallbackError);
+      captureError(fallbackError, {
+        scope: "vision-fallback",
+        deviceId,
+        extra: {
+          originalErrorType:
+            error instanceof Error ? error.constructor.name : typeof error,
+        },
+      });
       // Surface the original Claude error — it's the more meaningful one
       // for the caller/user to see (httpError.ts knows how to map it).
       throw error;

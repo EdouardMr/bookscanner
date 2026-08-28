@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     };
     return NextResponse.json(response);
   } catch (error) {
-    const { status, body } = toHttpError(error);
+    const { status, body } = toHttpError(error, "extract");
     return NextResponse.json(body, { status });
   }
 }
