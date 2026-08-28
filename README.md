@@ -8,12 +8,11 @@ what you'll enjoy.
 [bookscanner.app](https://bookscanner.app/)
 
 ## What It Does
-
-📸 **Scan a Shelf** → Photograph a bookshelf  
-🎯 **Set Preferences** → Genres, favorite authors/books, mood, and length. It's saved to your browser so you don't redo it  
-🤖 **Get a Recommendation** → A recommendation is made against your taste with an explanation
-📖 **Rich Details** → Real ratings, covers, and descriptions from Open Library  
-🔒 **No Account Needed** → Anonymous per-browser device id. The photo itself is never stored
+- 📸 **Scan a Shelf** → Photograph a bookshelf  
+- 🎯 **Set Preferences** → Genres, favorite authors/books, mood, and length. It's saved to your browser so you don't redo it  
+- 🤖 **Get a Recommendation** → A recommendation is made against your taste with an explanation
+- 📖 **Rich Details** → Real ratings, covers, and descriptions from Open Library  
+- 🔒 **No Account Needed** → Anonymous per-browser device id. The photo itself is never stored
 
 ## Key Features
 
@@ -38,12 +37,12 @@ what you'll enjoy.
 
 ## 🛠 Technology Stack
 
-**Frontend**: Next.js (App Router) + TypeScript, Tailwind CSS  
-**Backend**: Next.js Route Handlers (`app/api/`)  
-**AI**: Claude (`@anthropic-ai/sdk`) for vision extraction and recommendations, with structured (zod-validated) output via `messages.parse`; Google Cloud Vision OCR as a fallback when Claude is unavailable  
-**Book Data**: Open Library (no key needed) + Google Books (optional key) for metadata/covers/ratings  
-**Database**: Postgres (Neon) + Drizzle ORM for preferences and reading history  
-**Deployment**: Vercel
+- **Frontend**: Next.js (App Router) + TypeScript, Tailwind CSS  
+- **Backend**: Next.js Route Handlers (`app/api/`)  
+- **AI**: Claude (`@anthropic-ai/sdk`) for vision extraction and recommendations, with structured (zod-validated) output via `messages.parse`; Google Cloud Vision OCR as a fallback when Claude is unavailable  
+- **Book Data**: Open Library (no key needed) + Google Books (optional key) for metadata/covers/ratings  
+- **Database**: Postgres (Neon) + Drizzle ORM for preferences and reading history  
+- **Deployment**: Vercel
 
 ## 🚀 Quick Setup
 
